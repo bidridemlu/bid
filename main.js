@@ -1,38 +1,63 @@
 // main.js
-const initWarRoom = () => {
-    // Cria a barra lateral com estética Premium
-    const sidebar = document.createElement('div');
-    sidebar.id = 'tw-ai-sidebar';
-    sidebar.innerHTML = `
-        <div class="sidebar-header">
-            <h2>WAR ROOM AI</h2>
-            <span class="status-online">SISTEMA ATIVO</span>
-        </div>
-        
-        <div class="tool-section">
-            <button class="btn-tool" onclick="activatePlanner()">ATTACK PLANNER</button>
-            <button class="btn-tool" onclick="analyzeMap()">ANALISAR COM IA</button>
-        </div>
+const initFloatingWarRoom = () => {
+    // Remove se já existir (para evitar duplicatas no F5)
+    if (document.getElementById('tw-ai-window')) document.getElementById('tw-ai-window').remove();
 
-        <div id="ai-log">
-            <p>> Aguardando coordenadas...</p>
+    // Criar a Janela
+    const win = document.createElement('div');
+    win.id = 'tw-ai-window';
+    win.innerHTML = `
+        <div id="tw-ai-header">
+            <span>WAR ROOM AI</span>
+            <button onclick="document.getElementById('tw-ai-window').style.display='none'">X</button>
+        </div>
+        <div class="tw-ai-content">
+            <button class="btn-tool" onclick="activatePlanner()">ATTACK PLANNER</button>
+            <button class="btn-tool" onclick="analyzeMap()">ANALISAR MAPA (IA)</button>
+            <div id="ai-log">> Sistema pronto...</div>
         </div>
     `;
-    document.body.appendChild(sidebar);
+    document.body.appendChild(win);
 
-    // Ajusta o layout do TWReplay para caber a barra
-    document.body.style.marginLeft = "300px";
-    document.body.style.transition = "0.5s";
+    // Tornar a janela arrastável
+    dragElement(document.getElementById("tw-ai-window"));
 };
 
-// Funções de exemplo
-window.activatePlanner = () => {
-    alert("Attack Planner Ativado. Clique nas aldeias no mapa.");
-};
+function dragElement(elmnt) {
+    var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    const header = document.getElementById(elmnt.id + "header");
+    if (header) {
+        header.onmousedown = dragMouseDown;
+    }
 
-window.analyzeMap = () => {
-    console.log("Capturando dados do canvas para IA...");
-    // Aqui entrará a conexão com o Google AI Studio
-};
+    function dragMouseDown(e) {
+        e.preventDefault();
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        document.onmouseup = closeDragElement;
+        document.onmousemove = elementDrag;
+    }
 
-initWarRoom();
+    function elementDrag(e) {
+        e.preventDefault();
+        pos1 = pos3 - e.clientX;
+        pos2 = pos4 - e.clientY;
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        elmnt.style.top = (elmnt.top || elmnt.offsetTop) - pos2 + "px";
+        elmnt.style.left = (elmnt.left || elmnt.offsetLeft) - pos1 + "px";
+    }
+
+    function closeDragElement() {
+        document.onmouseup = null;
+        document.onmousemove = null;
+    }
+}
+
+// Funções de Teste
+window.activatePlanner = () => alert("Selecione o alvo no mapa...");
+window.analyzeMap = () => console.log("IA analisando...");
+
+window.addEventListener('load', initFloatingWarRoom);
+// Executa também imediatamente caso o load já tenha passado
+if (document.readyState === 'complete') initFloatingWarRoom();
