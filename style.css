@@ -1,0 +1,38 @@
+/* style.css */
+#tw-ai-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 280px;
+    height: 100vh;
+    background: #0a0a0a; /* Fundo Noir */
+    border-right: 1px solid #d4af37; /* Detalhe Dourado/Luxo */
+    color: #eee;
+    z-index: 10000;
+    padding: 20px;
+    box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+}
+
+.sidebar-header h2 {
+    color: #d4af37;
+    font-size: 1.2rem;
+    letter-spacing: 2px;
+    margin-bottom: 5px;
+}
+
+.btn-tool {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    color: #d4af37;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.3s;
+}
+
+.btn-tool:hover {
+    background: #d4af37;
+    color: #000;
+}
