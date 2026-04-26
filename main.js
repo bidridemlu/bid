@@ -1,13 +1,9 @@
-// main.js - Versão General de Guerra com IA
+// main.js - VERSÃO FINAL GENERAL DE GUERRA
 (function() {
-    const API_KEY = "AIzaSyBYugdEf0BKgEzD9thwskNK5-0XPZyuuNs";
-    let existing = document.getElementById('tw-ai-window');
-    if (existing) {
-        existing.style.display = (existing.style.display === 'none') ? 'block' : 'none';
-        return;
-    }
+    const API_KEY = "AIzaSyBYugdEf0BKgEzD9thwskNK5-0XPZyuuNs"; // <--- COLOQUE SUA CHAVE AQUI
 
-    // Criar a Janela
+    if (document.getElementById('tw-ai-window')) return;
+
     const win = document.createElement('div');
     win.id = 'tw-ai-window';
     win.style.top = "100px";
@@ -19,90 +15,85 @@
             <button onclick="document.getElementById('tw-ai-window').style.display='none'">X</button>
         </div>
         <div class="tw-ai-content">
-            <div class="menu-grid">
-                <button class="btn-tool" onclick="startPlanner()">📍 ATTACK PLANNER</button>
-                <button class="btn-tool" onclick="startDefense()">🛡️ AUTO-SNIPE</button>
-                <button class="btn-tool" onclick="askIA()">🤖 ANALISAR COM GEMINI</button>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 5px;">
+                <button class="btn-tool" onclick="startPlanner()">📍 SELECIONAR</button>
+                <button class="btn-tool" onclick="clearCoords()">🧹 LIMPAR</button>
+                <button class="btn-tool" onclick="askIA('op')">⚔️ PLANO DE OP</button>
+                <button class="btn-tool" onclick="askIA('fakes')">🎭 FAKE MGR</button>
             </div>
-            <div id="ai-log">> Aguardando ordens, General...</div>
-            <div id="coords-list" style="font-size:10px; color:#aaa; margin-top:5px;"></div>
+            <div id="ai-log">> Pronto para o combate, Fabio.</div>
+            <div id="coords-list" style="font-size:9px; color:#d4af37; margin-top:8px; border-top:1px solid #333; padding-top:5px; max-height:60px; overflow-y:auto;">
+                Alvos: nenhum
+            </div>
         </div>
     `;
     document.body.appendChild(win);
 
-    // Variáveis de Estado
     let selectedCoords = [];
 
-    // Função para Capturar Coordenadas do TWReplay
+    // Captura coordenadas ao clicar no mapa do TWReplay
     window.startPlanner = () => {
-        log("Modo Planner: Clique nas aldeias do mapa.");
-        document.onclick = function(e) {
-            // Tenta pegar a coordenada se o TWReplay mostrar no título ou elemento
-            const target = e.target;
-            log("Alvo selecionado: " + (target.title || "Aldeia Desconhecida"));
-            if(target.title) {
-                selectedCoords.push(target.title);
-                updateCoordsDisplay();
+        log("Modo Seleção: Clique nas aldeias.");
+        document.body.onclick = (e) => {
+            const el = e.target;
+            // No TWReplay, as coordenadas geralmente estão no title ou texto do elemento
+            const coordMatch = (el.innerText || el.title || "").match(/\d{3}\|\d{3}/);
+            if (coordMatch) {
+                if (!selectedCoords.includes(coordMatch[0])) {
+                    selectedCoords.push(coordMatch[0]);
+                    updateDisplay();
+                    log("Alvo fixado: " + coordMatch[0]);
+                }
             }
         };
     };
 
-    function updateCoordsDisplay() {
-        document.getElementById('coords-list').innerText = "Alvos: " + selectedCoords.join(" | ");
-    }
-
-    function log(msg) {
-        document.getElementById('ai-log').innerText = "> " + msg;
-    }
-
-    // INTEGRAÇÃO COM A IA (GEMINI 1.5 PRO)
-    window.askIA = async () => {
-        if (selectedCoords.length === 0) {
-            log("Erro: Selecione alvos no mapa primeiro.");
-            return;
-        }
-
-        log("IA pensando na melhor estratégia...");
-
-        const prompt = `Como general de Tribal Wars, analise estas coordenadas de alvos: ${selectedCoords.join(", ")}. 
-        Crie um plano de ataque coordenado simulando tempos de viagem de Nobres e Arietes. 
-        Seja tático e breve.`;
-
-        try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${API_KEY}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }]
-                })
-            });
-
-            const data = await response.json();
-            const aiText = data.candidates[0].content.parts[0].text;
-            alert("ESTRATÉGIA DA IA:\n\n" + aiText);
-            log("Análise concluída.");
-        } catch (error) {
-            log("Erro na conexão com Gemini.");
-            console.error(error);
-        }
+    window.clearCoords = () => {
+        selectedCoords = [];
+        updateDisplay();
+        log("Lista de alvos limpa.");
     };
 
-    // Função de Arrastar Janela
-    const header = document.getElementById("tw-ai-header");
-    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-    header.onmousedown = (e) => {
-        e.preventDefault();
-        pos3 = e.clientX;
-        pos4 = e.clientY;
-        document.onmouseup = () => { document.onmouseup = null; document.onmousemove = null; };
-        document.onmousemove = (e) => {
-            e.preventDefault();
-            pos1 = pos3 - e.clientX;
-            pos2 = pos4 - e.clientY;
-            pos3 = e.clientX;
-            pos4 = e.clientY;
-            win.style.top = (win.offsetTop - pos2) + "px";
-            win.style.left = (win.offsetLeft - pos1) + "px";
+    window.askIA = async (tipo) => {
+        if (selectedCoords.length === 0) return log("Selecione alvos primeiro!");
+        log("IA gerando estratégia...");
+
+        const prompts = {
+            op: `Crie um plano de ataque (OP) coordenado para estes alvos: ${selectedCoords.join(", ")}. Sugira tempos de saída para Nobres.`,
+            fakes: `Gere uma lista de 10 fakes variados para estes alvos: ${selectedCoords.join(", ")}, mascarando um ataque real.`
         };
+
+        try {
+            const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${API_KEY}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompts[tipo] }] }] })
+            });
+            const data = await resp.json();
+            const texto = data.candidates[0].content.parts[0].text;
+            
+            // Abre a resposta em uma janela bonita
+            alert("ESTRATÉGIA DO GENERAL AI:\n\n" + texto);
+            log("Análise concluída.");
+        } catch (e) { log("Erro na API."); }
+    };
+
+    function updateDisplay() {
+        document.getElementById('coords-list').innerText = "Alvos: " + (selectedCoords.join(", ") || "nenhum");
+    }
+
+    function log(m) { document.getElementById('ai-log').innerText = "> " + m; }
+
+    // Lógica de arrastar
+    const header = document.getElementById("tw-ai-header");
+    header.onmousedown = (e) => {
+        let p1 = 0, p2 = 0, p3 = e.clientX, p4 = e.clientY;
+        document.onmousemove = (ev) => {
+            p1 = p3 - ev.clientX; p2 = p4 - ev.clientY;
+            p3 = ev.clientX; p4 = ev.clientY;
+            win.style.top = (win.offsetTop - p2) + "px";
+            win.style.left = (win.offsetLeft - p1) + "px";
+        };
+        document.onmouseup = () => { document.onmousemove = null; };
     };
 })();
